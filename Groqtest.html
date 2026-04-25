@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groq API Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700">
+        <h2 class="text-2xl font-bold mb-6 text-center text-orange-400">Groq API Validator</h2>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Введите API Key:</label>
+                <input type="password" id="apiKey" 
+                    class="w-full p-3 bg-slate-700 rounded-lg border border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                    placeholder="gsk_...">
+            </div>
+
+            <button onclick="checkKey()" id="btn"
+                class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-orange-500/20">
+                Проверить ключ
+            </button>
+
+            <div id="status" class="hidden p-4 rounded-lg text-sm break-words border">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        async function checkKey() {
+            const key = document.getElementById('apiKey').value.trim();
+            const statusDiv = document.getElementById('status');
+            const btn = document.getElementById('btn');
+
+            if (!key) {
+                showStatus("Введите ключ!", "error");
+                return;
+            }
+
+            // Визуальная индикация загрузки
+            btn.disabled = true;
+            btn.innerText = "Проверяю...";
+            statusDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch('https://api.groq.com/openai/v1/models', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${key}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const models = data.data.map(m => m.id).slice(0, 3).join(', ');
+                    showStatus(`✅ Ключ активен!<br>Доступные модели (пример): ${models}...`, "success");
+                } else {
+                    showStatus(`❌ Ошибка: ${data.error?.message || 'Неверный ключ'}`, "error");
+                }
+            } catch (err) {
+                showStatus(`⚠️ Ошибка сети: ${err.message}`, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Проверить ключ";
+            }
+        }
+
+        function showStatus(text, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.classList.remove('hidden', 'bg-red-900/30', 'border-red-500', 'text-red-200', 'bg-green-900/30', 'border-green-500', 'text-green-200');
+            
+            if (type === "success") {
+                statusDiv.classList.add('bg-green-900/30', 'border-green-500', 'text-green-200');
+            } else {
+                statusDiv.classList.add('bg-red-900/30', 'border-red-500', 'text-red-200');
+            }
+            
+            statusDiv.innerHTML = text;
+        }
+    </script>
+</body>
+</html>
